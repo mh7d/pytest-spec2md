@@ -45,5 +45,6 @@ def pytest_runtest_makereport(item, call):
     outcome = yield
     report = outcome.get_result()
     node = getattr(item, 'obj', None)
-    if node and item.obj.__doc__:
-        report.docstring_summary = str(item.obj.__doc__)
+    if node:
+        report.node = node
+        report.docstring_summary = str(node.__doc__) if node.__doc__ else ''
