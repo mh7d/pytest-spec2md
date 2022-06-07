@@ -91,16 +91,29 @@ def _write_node_to_file(filename, node_content: _pytest.reports.TestReport):
                        f'## Spec from {content[0]}\n'
                        f'{mod.__doc__ if mod.__doc__ else ""}\n')
 
-        if len(content) != len(last_content) \
-                or content[1:-1] != last_content[1:-1]:
-            if len(content) == 2:
-                file.write(f'### General\n')
-            else:
+        if len(content) == 2 and content[0] != last_content[0]:
+            file.write(
+                f'### General\n'
+                f'\n'
+            )
+        else:
+            show_recursive = False
+            line_start = '###'
+            last_content.pop(-1)
+            last_content.extend(["" for _ in range(len(content) - len(last_content))])
+            print(f'{content} - {last_content}')
+            for act, last in zip(content[1: -1], last_content[1:-1]):
+                print(f'{act} - {last}')
+                if show_recursive or act != last:
+                    show_recursive = True
+                    file.write(
+                        f'{line_start} {_format_class_name(act)}\n'
+                    )
+                line_start += '#'
 
-                file.write(f'### {":".join(_format_class_name(x) for x in content[1:-1])}\n'
-                           f'{getattr(node_content, "parent_summary", "")}\n')
+        file.write(f' - **{_format_test_name(content[-1])}**  \n'
+                   f'  {getattr(node_content, "docstring_summary", "")}\n'
 
-        file.write(f' - {_format_test_name(content[-1])}\n'
-                   f'{getattr(node_content, "docstring_summary", "")}\n')
+                   )
 
     _last_node = node_content

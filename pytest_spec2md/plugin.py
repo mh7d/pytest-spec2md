@@ -1,4 +1,5 @@
 import pytest
+import inspect
 
 from . import replacer
 
@@ -48,3 +49,12 @@ def pytest_runtest_makereport(item, call):
     if node:
         report.node = node
         report.docstring_summary = str(node.__doc__) if node.__doc__ else ''
+        report.docstring_parents = _get_parent_docs(node)
+
+
+def _get_parent_docs(function):
+    docs = list()
+    if getattr(function, "__self__", None):  # Function in class
+        docs.append(function.__self__.__class__.__doc__)
+
+    return docs
