@@ -46,7 +46,7 @@ def _create_spec_file_if_not_exists(filename):
         with open(filename, 'w') as file:
             file.writelines([
                 '# Specification\n',
-                'Automatically generated using pytest_spec2md\n'
+                'Automatically generated using pytest-spec2md\n'
                 '\n',
                 f'Generated: {datetime.datetime.now()}\n',
                 '\n'
