@@ -16,7 +16,7 @@ classifiers = [
     "Topic :: Utilities"
 ]
 packages = [
-    { include = "pytest-spec2md" },
+    { include = "pytest_spec2md" },
     { include = "test", format = "sdist" },
 ]
 include = ["LICENSE"]
