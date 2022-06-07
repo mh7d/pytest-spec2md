@@ -34,7 +34,7 @@ wheel = "*"
 twine = "*"
 
 [tool.poetry.plugins.pytest11]
-pytest_spec = "pytest-spec2md.plugin"
+pytest_spec = "pytest_spec2md.plugin"
 
 [build-system]
 requires = ["poetry>=0.12"]
