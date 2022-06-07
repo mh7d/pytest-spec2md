@@ -58,8 +58,10 @@ def _create_file_content(report, state):
 
 
 def _split_scope(testnode):
-    return [i for i in testnode.split('::') if i != '()']
-
+    data =[i for i in testnode.split('::') if i != '()']
+    if data[-1].endswith("]"):
+        data[-1] = data[-1].split("[")[0]
+    return data
 
 _last_node: _pytest.reports.TestReport = None
 
@@ -99,21 +101,25 @@ def _write_node_to_file(filename, node_content: _pytest.reports.TestReport):
         else:
             show_recursive = False
             line_start = '###'
-            last_content.pop(-1)
-            last_content.extend(["" for _ in range(len(content) - len(last_content))])
-            print(f'{content} - {last_content}')
-            for act, last in zip(content[1: -1], last_content[1:-1]):
-                print(f'{act} - {last}')
+            lc = last_content[0: -1]
+            lc.extend(["" for _ in range(len(content) - len(lc))])
+            for act, last in zip(content[1: -1], lc[1:-1]):
                 if show_recursive or act != last:
                     show_recursive = True
                     file.write(
                         f'{line_start} {_format_class_name(act)}\n'
+                        f'\n'
                     )
+                    if act == content[-2]:
+                        file.write(
+                            f'{getattr(node_content, "docstring_parent", "")}\n'
+                            f'\n'
+                        )
                 line_start += '#'
 
-        file.write(f' - **{_format_test_name(content[-1])}**  \n'
-                   f'  {getattr(node_content, "docstring_summary", "")}\n'
-
-                   )
-
+        if content[-1] != last_content[-1]:
+            file.write(
+                f' - **{_format_test_name(content[-1])}**  \n'
+                f'  {getattr(node_content, "docstring_summary", "")}\n'
+            )
     _last_node = node_content

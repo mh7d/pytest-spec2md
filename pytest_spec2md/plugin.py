@@ -49,12 +49,17 @@ def pytest_runtest_makereport(item, call):
     if node:
         report.node = node
         report.docstring_summary = str(node.__doc__) if node.__doc__ else ''
-        report.docstring_parents = _get_parent_docs(node)
+        report.docstring_parent = _get_parent_doc(node)
 
 
-def _get_parent_docs(function):
-    docs = list()
-    if getattr(function, "__self__", None):  # Function in class
-        docs.append(function.__self__.__class__.__doc__)
+def _get_parent_doc(function):
+    func = getattr(function, "__self__", None)
+    if not func:
+        return ""
+    parent = getattr(func, "__class__", None)
+    if not parent:
+        return ""
 
-    return docs
+    doc = inspect.getdoc(parent)
+    return doc if doc is not None else ""
+
