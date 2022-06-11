@@ -121,11 +121,14 @@ def _write_node_to_file(filename, node_content: _pytest.reports.TestReport):
 
         if content[-1] != last_content[-1]:
             doc_string = getattr(node_content, "docstring_summary", "")
-            reference = getattr(node_content, "reference_doc", [""])
+            reference = getattr(node_content, "reference_doc", ["", ])
+            longnewline = "  \n  "
+            shortnewline="\n"
 
             file.write(
                 f' - **{_format_test_name(content[-1])}**  \n' +
-                (f'  {doc_string}\n' if doc_string else '') +
-                (f'  Tested function: *{reference[0]}*\n' if reference[0] else '')
+                (f'  {doc_string}  \n' if doc_string else '') +
+                (f'  Tested function: *{reference[0]}*  \n' if reference[0] else '') +
+                (f'  {longnewline.join(reference[1].split(shortnewline))}\n' if len(reference) > 1 else '')
             )
     _last_node = node_content

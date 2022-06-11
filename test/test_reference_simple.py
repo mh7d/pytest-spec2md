@@ -32,7 +32,7 @@ def test_creates_18_lines_of_documentation(pytester_reference: pytest.Pytester):
     with open(os.path.join(pytester_reference.path, 'documentation/spec.md')) as spec:
         spec = spec.readlines()
 
-    assert len(spec) == 12
+    assert len(spec) == 15
 
 
 def test_contains_referenced_func_name_in_spec(pytester_reference: pytest.Pytester):
