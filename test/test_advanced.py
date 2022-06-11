@@ -1,38 +1,36 @@
-"""
-Advanced specification test
-"""
+import os
+
+import pytest
 
 
-def function_to_test(p1, p2):
-    """docstring for function_to_test"""
-    pass
+@pytest.fixture
+def pytester_advanced(request, pytester):
+    print("\nStart test simple")
+    test_data_dir = os.path.join(request.config.rootdir, 'pytester_cases', 'case_advanced')
+
+    pytester.syspathinsert(os.path.join(request.config.rootdir, 'pytest_spec2md'))
+    print(request.config.rootdir)
+
+    with open(os.path.join(request.config.rootdir, 'pytester_cases', 'conftest.py')) as file_content:
+        source = "".join(file_content.readlines())
+        pytester.makeconftest(source=source)
+
+    with open(os.path.join(test_data_dir, 'test_advanced.py')) as file_content:
+        source = "".join(file_content.readlines())
+        pytester.makepyfile(source)
+
+    return pytester
 
 
-def test_function_to_test_simple():
-    """docstring for test to test function_to_test"""
-    assert True
+def test_simple_runs_6_successful_tests(pytester_advanced: pytest.Pytester):
+    result = pytester_advanced.runpytest("--spec2md")
+    result.assert_outcomes(passed=6)
 
 
-def test_function_to_test_simple_v2():
-    """docstring for test to test function_to_test_v2"""
-    assert True
+def test_simple_creates_18_lines_of_documentation(pytester_advanced: pytest.Pytester):
+    pytester_advanced.runpytest("--spec2md")
 
+    with open(os.path.join(pytester_advanced.path, 'documentation/spec.md')) as spec:
+        spec = spec.readlines()
 
-class TestClassForFunctionToTest:
-
-    def test_has_one_parameter(self):
-        """the run function is called with the test parameter"""
-        assert True
-
-    def test_has_two_parameter(self):
-        assert True
-
-    class TestSubClass:
-        """description of sub class"""
-
-        def test_under_sub_class(self):
-            """sub_class_test_function is running"""
-            assert True
-
-    def test_another_one(self):
-        assert True
+    assert len(spec) == 32

@@ -28,10 +28,12 @@ def _delete_existing_file(filename):
 
 
 def create_logreport(self, report: _pytest.reports.TestReport, use_terminal=True):
+    print('Create Logreport')
     filename = self.config.getini('spec_target_file')
-    _create_spec_file_if_not_exists(filename)
+    _create_spec_file_if_not_exists(os.path.join(os.getcwd(), filename))
     if report.when == 'call':
         result, _, _ = self.config.hook.pytest_report_teststatus(report=report, config=self.config)
+        self.stats.setdefault(result, []).append(report)
 
         _write_node_to_file(filename, _create_file_content(report, result))
 
@@ -58,10 +60,11 @@ def _create_file_content(report, state):
 
 
 def _split_scope(testnode):
-    data =[i for i in testnode.split('::') if i != '()']
+    data = [i for i in testnode.split('::') if i != '()']
     if data[-1].endswith("]"):
         data[-1] = data[-1].split("[")[0]
     return data
+
 
 _last_node: _pytest.reports.TestReport = None
 

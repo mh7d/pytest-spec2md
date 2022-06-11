@@ -3,11 +3,7 @@
 
 name: Python Unit Tests
 
-on:
-  push:
-    branches: [ master ]
-  pull_request:
-    branches: [ master ]
+on: [push, pull_request]
 
 jobs:
   linter:
@@ -44,8 +40,7 @@ jobs:
       run: |
         pip install pytest
         pip install pytest-cov
-        pip install pytest-asyncio
-        pytest -m "not device_needed" --cov-config=.coveragerc --cov-report html --cov=.
+        pytest test --cov-config=.coveragerc --cov-report html --cov=.
     - name: Fetching testcoverage results
       uses: actions/upload-artifact@v1
       with:
