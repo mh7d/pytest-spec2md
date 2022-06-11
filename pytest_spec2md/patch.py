@@ -28,7 +28,6 @@ def _delete_existing_file(filename):
 
 
 def create_logreport(self, report: _pytest.reports.TestReport, use_terminal=True):
-    print('Create Logreport')
     filename = self.config.getini('spec_target_file')
     _create_spec_file_if_not_exists(os.path.join(os.getcwd(), filename))
     if report.when == 'call':
@@ -38,7 +37,7 @@ def create_logreport(self, report: _pytest.reports.TestReport, use_terminal=True
         _write_node_to_file(filename, _create_file_content(report, result))
 
         if use_terminal:
-            print(f'{report.outcome}: {report.head_line}')
+            print(f'{report.nodeid} {"." if report.passed else "F"}')
 
 
 def _create_spec_file_if_not_exists(filename):
@@ -121,8 +120,15 @@ def _write_node_to_file(filename, node_content: _pytest.reports.TestReport):
                 line_start += '#'
 
         if content[-1] != last_content[-1]:
+            doc_string = getattr(node_content, "docstring_summary", "")
+            reference = getattr(node_content, "reference_doc", ["", ])
+            longnewline = "  \n  "
+            shortnewline="\n"
+
             file.write(
-                f' - **{_format_test_name(content[-1])}**  \n'
-                f'  {getattr(node_content, "docstring_summary", "")}\n'
+                f' - **{_format_test_name(content[-1])}**  \n' +
+                (f'  {doc_string}  \n' if doc_string else '') +
+                (f'  Tested function: *{reference[0]}*  \n' if reference[0] else '') +
+                (f'  {longnewline.join(reference[1].split(shortnewline))}\n' if len(reference) > 1 else '')
             )
     _last_node = node_content

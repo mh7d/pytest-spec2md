@@ -5,11 +5,9 @@ import pytest
 
 @pytest.fixture
 def pytester_advanced(request, pytester):
-    print("\nStart test simple")
     test_data_dir = os.path.join(request.config.rootdir, 'pytester_cases', 'case_advanced')
 
     pytester.syspathinsert(os.path.join(request.config.rootdir, 'pytest_spec2md'))
-    print(request.config.rootdir)
 
     with open(os.path.join(request.config.rootdir, 'pytester_cases', 'conftest.py')) as file_content:
         source = "".join(file_content.readlines())
@@ -22,15 +20,15 @@ def pytester_advanced(request, pytester):
     return pytester
 
 
-def test_simple_runs_6_successful_tests(pytester_advanced: pytest.Pytester):
+def test_runs_6_successful_tests(pytester_advanced: pytest.Pytester):
     result = pytester_advanced.runpytest("--spec2md")
     result.assert_outcomes(passed=6)
 
 
-def test_simple_creates_18_lines_of_documentation(pytester_advanced: pytest.Pytester):
+def test_creates_30_lines_of_documentation(pytester_advanced: pytest.Pytester):
     pytester_advanced.runpytest("--spec2md")
 
     with open(os.path.join(pytester_advanced.path, 'documentation/spec.md')) as spec:
         spec = spec.readlines()
 
-    assert len(spec) == 32
+    assert len(spec) == 30

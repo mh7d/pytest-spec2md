@@ -35,6 +35,10 @@ def pytest_configure(config):
         import _pytest
         import _pytest.terminal
 
+        config.addinivalue_line(
+            "markers", "spec_reference(name): mark specification reference for the test"
+        )
+
         _pytest.terminal.TerminalReporter.pytest_runtest_logstart = replacer.logstart
         _pytest.terminal.TerminalReporter.pytest_runtest_logreport = \
             replacer.report_on_terminal if use_terminal else replacer.report_no_terminal
@@ -52,6 +56,8 @@ def pytest_runtest_makereport(item, call):
         report.node = node
         report.docstring_summary = str(node.__doc__) if node.__doc__ else ''
         report.docstring_parent = _get_parent_doc(node)
+        for marker in item.iter_markers_with_node(name='spec_reference'):
+            report.reference_doc = marker[1].args
 
 
 def _get_parent_doc(function):
@@ -64,4 +70,3 @@ def _get_parent_doc(function):
 
     doc = inspect.getdoc(parent)
     return doc if doc is not None else ""
-
