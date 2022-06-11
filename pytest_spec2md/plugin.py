@@ -33,6 +33,7 @@ def pytest_configure(config):
 
         import six
         import _pytest
+
         _pytest.terminal.TerminalReporter.pytest_runtest_logstart = replacer.logstart
         _pytest.terminal.TerminalReporter.pytest_runtest_logreport = \
             replacer.report_on_terminal if use_terminal else replacer.report_no_terminal
