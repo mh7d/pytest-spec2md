@@ -1,1 +1,1 @@
-pytest_plugins = ["pytest_spec2md.plugin", ]
+pytest_plugins = ["pytester", ]

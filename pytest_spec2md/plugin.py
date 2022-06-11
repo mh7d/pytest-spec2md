@@ -33,6 +33,7 @@ def pytest_configure(config):
 
         import six
         import _pytest
+        import _pytest.terminal
 
         _pytest.terminal.TerminalReporter.pytest_runtest_logstart = replacer.logstart
         _pytest.terminal.TerminalReporter.pytest_runtest_logreport = \
@@ -41,7 +42,7 @@ def pytest_configure(config):
         six.moves.reload_module(_pytest)
 
 
-@pytest.mark.hookwrapper
+@pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):
     """Adds docstring to the item usage in report"""
     outcome = yield

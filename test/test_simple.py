@@ -1,24 +1,36 @@
-"""
-General Documentation test
-"""
+import os
+
 import pytest
 
 
-class CaseForTest:
+@pytest.fixture
+def pytester_simple(request, pytester):
+    print("\nStart test simple")
+    test_data_dir = os.path.join(request.config.rootdir, 'pytester_cases', 'case_simple')
 
-    def run(self):
-        pass
+    pytester.syspathinsert(os.path.join(request.config.rootdir, 'pytest_spec2md'))
+    print(request.config.rootdir)
+
+    with open(os.path.join(request.config.rootdir, 'pytester_cases', 'conftest.py')) as file_content:
+        source = "".join(file_content.readlines())
+        pytester.makeconftest(source=source)
+
+    with open(os.path.join(test_data_dir, 'test_simple.py')) as file_content:
+        source = "".join(file_content.readlines())
+        pytester.makepyfile(source)
+
+    return pytester
 
 
-class TestCaseForTest:
-    """
-    docstring for testclass
-    """
+def test_simple_runs_4_successful_tests(pytester_simple: pytest.Pytester):
+    result = pytester_simple.runpytest("--spec2md")
+    result.assert_outcomes(passed=4)
 
-    @pytest.mark.parametrize('test', [1, 2, 3])
-    def test_run(self, test):
-        """the run function is called with the test parameter"""
-        assert True
 
-    def test_run2(self):
-        assert True
+def test_simple_creates_18_lines_of_documentation(pytester_simple: pytest.Pytester):
+    pytester_simple.runpytest("--spec2md")
+
+    with open(os.path.join(pytester_simple.path, 'documentation/spec.md')) as spec:
+        spec = spec.readlines()
+
+    assert len(spec) == 18
