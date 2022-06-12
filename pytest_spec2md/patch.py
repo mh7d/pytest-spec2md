@@ -47,10 +47,9 @@ def _create_spec_file_if_not_exists(filename):
         with open(filename, 'w') as file:
             file.writelines([
                 '# Specification\n',
-                'Automatically generated using pytest_spec2md\n'
-                '\n',
-                f'Generated: {datetime.datetime.now()}\n',
-                '\n'
+                'Automatically generated using pytest_spec2md  \n'
+                f'Generated: {datetime.datetime.now()}  \n'
+                f'\n',
             ])
 
 
@@ -65,70 +64,114 @@ def _split_scope(testnode):
     return data
 
 
-_last_node: _pytest.reports.TestReport = None
+_last_parents: list = []
+_last_node_content: _pytest.reports.TestReport = None
 
 
 def _format_test_name(name: str):
+    if name is not str:
+        name = str(name)
+    if name.endswith("["):
+        name = name[:name.find("[")]
     return name.replace('test_', '', 1).replace('_', ' ')
 
 
 def _format_class_name(name: str):
+    if name is not str:
+        name = str(name.__name__)
     name = name.replace('Test', '', 1)
     return ''.join(' ' + x if x.isupper() else x for x in name)
 
 
+def format_doc_string(doc_string: str):
+    if not doc_string:
+        return []
+    return [x.strip() for x in doc_string.split("\n") if x.strip()]
+
+
 def _write_node_to_file(filename, node_content: _pytest.reports.TestReport):
-    global _last_node
+    global _last_parents
+    global _last_node_content
 
     if not os.path.exists(filename):
         raise ValueError(f'File not found: {filename}')
 
-    content = _split_scope(node_content.nodeid)
-    last_content = _split_scope(_last_node.nodeid) if _last_node else ["", "", ""]
+    parents = getattr(node_content, "node_parents", [])
+
+    last_module = _split_scope(_last_node_content.nodeid)[0] if _last_node_content else ""
+    act_module = _split_scope(node_content.nodeid)[0]
+
+    last_tc_name = _split_scope(_last_node_content.nodeid)[-1] if _last_node_content else ""
+    act_tc_name = _split_scope(node_content.nodeid)[-1]
+
+    longnewline = "  \n  "
+    shortnewline = "\n"
+    print_testcase = False
 
     with open(filename, 'a') as file:
-        if not _last_node or content[0] != last_content[0]:  # changed test file
-            module_name = content[0].replace('/', '.')[:-3]
-            mod = importlib.import_module(module_name)
+        if not last_module or last_module != act_module:  # changed test file
+            write_module_info_to_file(act_module, file)
 
-            file.write(f'\n'
-                       f'## Spec from {content[0]}\n'
-                       f'{mod.__doc__ if mod.__doc__ else ""}\n')
-
-        if len(content) == 2 and content[0] != last_content[0]:
-            file.write(
-                f'### General\n'
-                f'\n'
-            )
+        if len(parents) == 0:
+            if last_module != act_module:
+                file.write(
+                    f'\n'
+                    f'### General\n'
+                    f'\n'
+                )
+                print_testcase = True
         else:
             show_recursive = False
             line_start = '###'
-            lc = last_content[0: -1]
-            lc.extend(["" for _ in range(len(content) - len(lc))])
-            for act, last in zip(content[1: -1], lc[1:-1]):
+            last_parents = _last_parents.copy()
+            last_parents.extend(["" for _ in range(len(parents) - len(last_parents))])
+            for act, last in zip(parents, last_parents):
                 if show_recursive or act != last:
                     show_recursive = True
+                    doc_lines = format_doc_string(getattr(act, "__doc__"))
                     file.write(
-                        f'{line_start} {_format_class_name(act)}\n'
                         f'\n'
+                        f'{line_start}{_format_class_name(act)}\n' +
+                        (f'  {shortnewline.join(doc_lines)}  \n' if doc_lines else '')
                     )
-                    if act == content[-2]:
-                        file.write(
-                            f'{getattr(node_content, "docstring_parent", "")}\n'
-                            f'\n'
-                        )
+                    write_references(node_content, act, file)
+                    file.write(f'\n')
+
+                    print_testcase = True
                 line_start += '#'
 
-        if content[-1] != last_content[-1]:
-            doc_string = getattr(node_content, "docstring_summary", "")
-            reference = getattr(node_content, "reference_doc", ["", ])
-            longnewline = "  \n  "
-            shortnewline="\n"
+        if print_testcase or act_tc_name != last_tc_name:
+            tc = getattr(node_content, "node", None)
+            doc_lines = format_doc_string(getattr(tc, "__doc__"))
 
             file.write(
-                f' - **{_format_test_name(content[-1])}**  \n' +
-                (f'  {doc_string}  \n' if doc_string else '') +
-                (f'  Tested function: *{reference[0]}*  \n' if reference[0] else '') +
-                (f'  {longnewline.join(reference[1].split(shortnewline))}\n' if len(reference) > 1 else '')
+                f' - **{_format_test_name(act_tc_name)}**  \n' +
+                (f'  {longnewline.join(doc_lines)}\n' if doc_lines else '')
             )
-    _last_node = node_content
+            write_references(node_content, tc, file)
+
+    _last_parents = parents
+    _last_node_content = node_content
+
+
+def write_module_info_to_file(act_module, file):
+    module_name = act_module.replace('/', '.')[:-3]
+    mod = importlib.import_module(module_name)
+    doc_lines = format_doc_string(mod.__doc__)
+    shortnewline = "\n"
+
+    file.write(
+        f'## Spec from {act_module}\n' +
+        (f'{shortnewline.join(doc_lines)}  \n' if doc_lines else '')
+    )
+
+
+def write_references(node_content, act_obj, file):
+    longnewline = "  \n  "
+    references = getattr(node_content, "reference_docs", [])
+    for target, reference in references:
+        if target.obj == act_obj:
+            file.write(
+                (f'  Tests: *{reference[0]}*  \n' if reference[0] else '') +
+                (f'  {longnewline.join(format_doc_string(reference[1]))}\n' if len(reference) > 1 else '')
+            )

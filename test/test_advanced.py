@@ -25,10 +25,19 @@ def test_runs_6_successful_tests(pytester_advanced: pytest.Pytester):
     result.assert_outcomes(passed=6)
 
 
-def test_creates_30_lines_of_documentation(pytester_advanced: pytest.Pytester):
+def test_creates_27_lines_of_documentation(pytester_advanced: pytest.Pytester):
     pytester_advanced.runpytest("--spec2md")
 
     with open(os.path.join(pytester_advanced.path, 'documentation/spec.md')) as spec:
         spec = spec.readlines()
 
-    assert len(spec) == 30
+    assert len(spec) == 27
+
+
+def test_generates_sub_class_heading_entry(pytester_advanced: pytest.Pytester):
+    pytester_advanced.runpytest("--spec2md")
+
+    with open(os.path.join(pytester_advanced.path, 'documentation/spec.md')) as spec:
+        spec = spec.readlines()
+
+    assert '#### Sub Class\n' in spec
