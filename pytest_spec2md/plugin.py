@@ -54,10 +54,32 @@ def pytest_runtest_makereport(item, call):
     node = getattr(item, 'obj', None)
     if node:
         report.node = node
-        report.docstring_summary = str(node.__doc__) if node.__doc__ else ''
-        report.docstring_parent = _get_parent_doc(node)
+        report.node_parents = []
+        parent = get_parent(node)
+        while parent:
+            report.node_parents.append(parent)
+            parent = get_parent(parent)
+        report.node_parents.reverse()
+
+        report.reference_docs = []
         for marker in item.iter_markers_with_node(name='spec_reference'):
-            report.reference_doc = marker[1].args
+            report.reference_docs.append((marker[0], marker[1].args))
+
+
+def get_parent(obj):
+    try:
+        parents = obj.__qualname__.split(".")
+        if len(parents) > 1 and "<locals>" not in parents:
+            full_name = obj.__module__ + "." + ".".join(parents[:-1])
+            script = \
+                f'exec("import {obj.__module__}") or {full_name}'
+            x = eval(script, globals(), locals())
+            return x
+
+    except Exception as err:
+        print(err)
+
+    return None
 
 
 def _get_parent_doc(function):

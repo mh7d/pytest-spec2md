@@ -25,10 +25,10 @@ def test_simple_runs_4_successful_tests(pytester_simple: pytest.Pytester):
     result.assert_outcomes(passed=4)
 
 
-def test_simple_creates_17_lines_of_documentation(pytester_simple: pytest.Pytester):
+def test_simple_creates_13_lines_of_documentation(pytester_simple: pytest.Pytester):
     pytester_simple.runpytest("--spec2md")
 
     with open(os.path.join(pytester_simple.path, 'documentation/spec.md')) as spec:
         spec = spec.readlines()
 
-    assert len(spec) == 17
+    assert len(spec) == 13

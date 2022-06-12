@@ -5,7 +5,7 @@ import pytest
 
 @pytest.fixture
 def pytester_reference(request, pytester):
-    test_data_dir = os.path.join(request.config.rootdir, 'pytester_cases', 'case_reference_simple')
+    test_data_dir = os.path.join(request.config.rootdir, 'pytester_cases', 'case_class_reference')
 
     pytester.syspathinsert(os.path.join(request.config.rootdir, 'pytest_spec2md'))
 
@@ -13,7 +13,7 @@ def pytester_reference(request, pytester):
         source = "".join(file_content.readlines())
         pytester.makeconftest(source=source)
 
-    with open(os.path.join(test_data_dir, 'test_ref.py')) as file_content:
+    with open(os.path.join(test_data_dir, 'test_class_reference.py')) as file_content:
         source = "".join(file_content.readlines())
         pytester.makepyfile(source)
 
@@ -22,22 +22,16 @@ def pytester_reference(request, pytester):
 
 def test_runs_1_successful_tests(pytester_reference: pytest.Pytester):
     result = pytester_reference.runpytest("--spec2md")
+    print(result.stderr)
     result.assert_outcomes(passed=1)
 
 
-def test_creates_12_lines_of_documentation(pytester_reference: pytest.Pytester):
+def test_creates_18_lines_of_documentation(pytester_reference: pytest.Pytester):
     pytester_reference.runpytest("--spec2md")
 
     with open(os.path.join(pytester_reference.path, 'documentation/spec.md')) as spec:
         spec = spec.readlines()
 
-    assert len(spec) == 12
+    assert len(spec) == 18
 
 
-def test_contains_referenced_func_name_in_spec(pytester_reference: pytest.Pytester):
-    pytester_reference.runpytest("--spec2md")
-
-    with open(os.path.join(pytester_reference.path, 'documentation/spec.md')) as spec:
-        spec = spec.readlines()
-
-    assert any(x.find('function_to_ref') >= 0 for x in spec)
