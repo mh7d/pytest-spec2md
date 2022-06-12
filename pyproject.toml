@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "pytest-spec2md"
-version = "0.0.0"
+version = "0.1.2"
 description = "Library pytest-spec2md is a pytest plugin to create a markdown specification while running pytest."
 readme = "README.md"
 authors = ["mh7d"]
@@ -36,9 +36,6 @@ pytest-cov = "*"
 [tool.poetry.plugins.pytest11]
 pytest_spec = "pytest_spec2md.plugin"
 
-[tool.poetry-dynamic-versioning]
-enable = true
-
 [build-system]
-requires = ["poetry>=0.12", "poetry-dynamic-versioning-plugin"]
+requires = ["poetry>=0.12"]
 build-backend = "poetry.masonry.api"
