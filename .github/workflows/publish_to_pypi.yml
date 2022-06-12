@@ -1,0 +1,17 @@
+name: Publish Python distributions to PyPI
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-n-publish:
+    name: Build and publish Python distributions to PyPI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@main
+      - name: Publish python poetry package
+        uses: JRubics/poetry-publish@v1.11
+        with:
+          pypi_token: ${{ secrets.PYPI_LOGIN }}

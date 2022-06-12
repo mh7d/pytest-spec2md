@@ -13,4 +13,11 @@ pip install pytest-spec2md
 ```
 
 Then you can activate the module using *--spec* Parameter when calling pytest. You find the generated markdown file
-under documentation/spec.md
+under *documentation/spec.md*.
+
+You can change the target directory using the parameter *spec_target_file*.
+
+## Examples
+
+Examples for the usage can be found here: 
+[UseCases on GitHub](https://github.com/mh7d/pytest-spec2md/tree/main/pytester_cases)
