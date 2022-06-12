@@ -24,7 +24,7 @@ packages = [
 include = ["LICENSE"]
 
 [tool.poetry.dependencies]
-pytest = ">7.0"
+pytest = {version = ">7.0", python = ">3.8"}
 six = "*"
 
 [tool.poetry.dev-dependencies]
