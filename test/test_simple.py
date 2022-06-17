@@ -1,6 +1,7 @@
 import os
 
 import pytest
+import xml.etree.ElementTree as et
 
 
 @pytest.fixture
@@ -32,3 +33,12 @@ def test_simple_creates_13_lines_of_documentation(pytester_simple: pytest.Pytest
         spec = spec.readlines()
 
     assert len(spec) == 13
+
+
+def test_junitxml_creates_4_testcases(pytester_simple: pytest.Pytester):
+    pytester_simple.runpytest("--spec2md", "--junitxml=junit.xml")
+
+    root_node = et.parse(os.path.join(pytester_simple.path, 'junit.xml')).getroot()
+    test_cases = root_node.findall('.//*')
+    assert sum(x.tag == 'testsuite' for x in test_cases) == 1
+    assert sum(x.tag == 'testcase' for x in test_cases) == 4
