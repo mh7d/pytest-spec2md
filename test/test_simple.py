@@ -29,14 +29,29 @@ def test_simple_runs_4_successful_tests(pytester_simple: pytest.Pytester):
 def test_simple_creates_13_lines_of_documentation(pytester_simple: pytest.Pytester):
     pytester_simple.runpytest("--spec2md")
 
-    with open(os.path.join(pytester_simple.path, 'documentation/spec.md')) as spec:
-        spec = spec.readlines()
+    with open(os.path.join(pytester_simple.path, 'documentation/spec.md')) as spec_file:
+        spec = spec_file.readlines()
 
     assert len(spec) == 13
 
 
+def test_spec_created_using_junit_and_cov(pytester_simple: pytest.Pytester):
+    pytester_simple.runpytest("--spec2md", "--junitxml=junit.xml")
+
+    assert os.path.exists(os.path.join(pytester_simple.path, 'documentation/spec.md'))
+
+
 def test_junitxml_creates_4_testcases(pytester_simple: pytest.Pytester):
     pytester_simple.runpytest("--spec2md", "--junitxml=junit.xml")
+
+    root_node = et.parse(os.path.join(pytester_simple.path, 'junit.xml')).getroot()
+    test_cases = root_node.findall('.//*')
+    assert sum(x.tag == 'testsuite' for x in test_cases) == 1
+    assert sum(x.tag == 'testcase' for x in test_cases) == 4
+
+
+def test_coverage_and_junitxml_creates_4_testcases(pytester_simple: pytest.Pytester):
+    pytester_simple.runpytest("--spec2md", "--cov", "--junitxml=junit.xml")
 
     root_node = et.parse(os.path.join(pytester_simple.path, 'junit.xml')).getroot()
     test_cases = root_node.findall('.//*')
