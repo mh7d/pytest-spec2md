@@ -43,21 +43,6 @@ def pytest_configure(config):
         )
 
 
-def _sort_by_module(items: list[_pytest.python.Function]):
-    unique_modules = list(set(item.module for item in items))
-
-    def index_of_module(obj: _pytest.python.Function):
-        return unique_modules.index(obj.module)
-
-    # items.sort(key=index_of_module)
-
-
-def pytest_collection_modifyitems(session, config, items: list[_pytest.python.Function]):
-    pass
-#    if config.option.spec2md:
-#        _sort_by_module(items)
-
-
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):
     """Adds docstring to the item usage in report"""
