@@ -1,7 +1,11 @@
+import os
+
+import _pytest
+import _pytest.terminal
 import pytest
 import inspect
 
-from . import replacer
+import pytest_spec2md.spec_creator
 
 
 def pytest_addoption(parser):
@@ -13,7 +17,6 @@ def pytest_addoption(parser):
         help='Saves test results as specification document in markdown format.'
     )
 
-    # register config options
     parser.addini(
         'spec_target_file',
         default='documentation/spec.md',
@@ -27,23 +30,40 @@ def pytest_addoption(parser):
     )
 
 
-def pytest_configure(config):
-    if getattr(config.option, 'spec2md', 0):
-        use_terminal = not getattr(config.option, 'quiet', 0) and not getattr(config.option, 'verbose', 0)
+default_funcs = {}
 
-        import six
-        import _pytest
-        import _pytest.terminal
+
+def _initialize():
+    global default_funcs
+
+    if not default_funcs.get('log_report'):
+        default_funcs['log_report'] = _pytest.terminal.TerminalReporter.pytest_runtest_logreport
+
+
+def _report_on_terminal(self, report):
+    def wrapper():
+        return pytest_spec2md.spec_creator.create_specification_document(self, report, default_func=default_funcs['log_report'])
+
+    return wrapper()
+
+
+def pytest_configure(config):
+    _initialize()
+    import six
+
+    if config.option.spec2md:
+        pytest_spec2md.spec_creator.delete_existing_specification_file(config)
 
         config.addinivalue_line(
             "markers", "spec_reference(name): mark specification reference for the test"
         )
 
-        _pytest.terminal.TerminalReporter.pytest_runtest_logstart = replacer.logstart
-        _pytest.terminal.TerminalReporter.pytest_runtest_logreport = \
-            replacer.report_on_terminal if use_terminal else replacer.report_no_terminal
-        _pytest.terminal.TerminalReporter.pytest_collection_modifyitems = replacer.modify_items
-        six.moves.reload_module(_pytest)
+        _pytest.terminal.TerminalReporter.pytest_runtest_logreport = _report_on_terminal
+
+    else:
+        _pytest.terminal.TerminalReporter.pytest_runtest_logreport = default_funcs['log_report']
+
+    six.moves.reload_module(_pytest)
 
 
 @pytest.hookimpl(hookwrapper=True)

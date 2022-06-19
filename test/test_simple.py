@@ -9,6 +9,7 @@ def pytester_simple(request, pytester):
     test_data_dir = os.path.join(request.config.rootdir, 'pytester_cases', 'case_simple')
 
     pytester.syspathinsert(os.path.join(request.config.rootdir, 'pytest_spec2md'))
+    pytester.parseconfigure(os.path.join(request.config.rootdir, 'pytester_cases', 'pytester.config'))
 
     with open(os.path.join(request.config.rootdir, 'pytester_cases', 'conftest.py')) as file_content:
         source = "".join(file_content.readlines())
@@ -57,3 +58,12 @@ def test_coverage_and_junitxml_creates_4_testcases(pytester_simple: pytest.Pytes
     test_cases = root_node.findall('.//*')
     assert sum(x.tag == 'testsuite' for x in test_cases) == 1
     assert sum(x.tag == 'testcase' for x in test_cases) == 4
+
+
+def test_uses_default_output_on_console(pytester_simple: pytest.Pytester):
+    default_result = pytester_simple.runpytest()
+    spec_result = pytester_simple.runpytest("--spec2md")
+
+    assert len(default_result.stdout.lines) == len(spec_result.stdout.lines)
+    assert all(default_result.stdout.lines[i] == spec_result.stdout.lines[i]
+               for i in range(len(default_result.stdout.lines)))
