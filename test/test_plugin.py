@@ -97,10 +97,12 @@ class TestPytestCollectionModifyitems:
         assert len(items) == old_length
 
     def test_items_were_sorted_by_module(self):
+        # Remove sorting because it is not stable so far
+
         items = self.items
 
         pytest_spec2md.plugin.pytest_collection_modifyitems(None, self.options, items)
 
         assert items[0] == self.items[0]
-        assert items[1] == self.items[2]
-        assert items[2] == self.items[1]
+        assert items[1] == self.items[1]
+        assert items[2] == self.items[2]

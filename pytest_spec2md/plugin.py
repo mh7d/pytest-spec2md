@@ -49,7 +49,7 @@ def _sort_by_module(items: list[_pytest.python.Function]):
     def index_of_module(obj: _pytest.python.Function):
         return unique_modules.index(obj.module)
 
-    return items.sort(key=index_of_module)
+    # items.sort(key=index_of_module)
 
 
 def pytest_collection_modifyitems(session, config, items: list[_pytest.python.Function]):
