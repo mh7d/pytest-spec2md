@@ -24,7 +24,33 @@ You can change the target directory using the parameter *spec_target_file*.
 spec_target_file = path/to/target/doc/file
 ```
 
+## Using markers
+
+The plugin provides the marker *spec_reference*. This marker can be used to connect a test_case with the testing object.
+The name of testing object will than be added to the documentation. If an optional documentation is provided, this will
+also be displayed.
+
+The marker can be used at every layer of testing object, so you can also use it at a class.
+
+#### Example
+
+```python
+import pytest
+
+
+def function_to_ref():
+    """ Simple doc comment
+    with two lines
+    """
+    pass
+
+
+@pytest.mark.spec_reference(function_to_ref.__name__, function_to_ref.__doc__)
+def test_use_a_reference_in_doc():
+    assert True
+```
+
 ## Examples
 
-Examples for the usage can be found here: 
+Examples for the usage can be found here:
 [UseCases on GitHub](https://github.com/mh7d/pytest-spec2md/tree/main/pytester_cases)

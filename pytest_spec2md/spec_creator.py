@@ -41,8 +41,8 @@ def _create_file_content(report, state):
     return report
 
 
-def _split_scope(testnode):
-    data = [i for i in testnode.split('::') if i != '()']
+def _split_scope(test_node):
+    data = [i for i in test_node.split('::') if i != '()']
     if data[-1].endswith("]"):
         data[-1] = data[-1].split("[")[0]
     return data

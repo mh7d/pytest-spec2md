@@ -55,7 +55,7 @@ def pytest_configure(config):
         pytest_spec2md.spec_creator.delete_existing_specification_file(config)
 
         config.addinivalue_line(
-            "markers", "spec_reference(name): mark specification reference for the test"
+            "markers", "spec_reference(name, docstring): mark specification reference for the test"
         )
 
         _pytest.terminal.TerminalReporter.pytest_runtest_logreport = _report_on_terminal
