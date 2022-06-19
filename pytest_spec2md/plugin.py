@@ -53,8 +53,9 @@ def _sort_by_module(items: list[_pytest.python.Function]):
 
 
 def pytest_collection_modifyitems(session, config, items: list[_pytest.python.Function]):
-    if config.option.spec2md:
-        _sort_by_module(items)
+    pass
+#    if config.option.spec2md:
+#        _sort_by_module(items)
 
 
 @pytest.hookimpl(hookwrapper=True)
