@@ -1,5 +1,6 @@
 import os
 
+import deepdiff
 import pytest
 import xml.etree.ElementTree as et
 
@@ -65,5 +66,4 @@ def test_uses_default_output_on_console(pytester_simple: pytest.Pytester):
     spec_result = pytester_simple.runpytest("--spec2md")
 
     assert len(default_result.stdout.lines) == len(spec_result.stdout.lines)
-    assert all(default_result.stdout.lines[i] == spec_result.stdout.lines[i]
-               for i in range(len(default_result.stdout.lines)))
+    assert not deepdiff.DeepDiff(default_result.stdout.lines, spec_result.stdout.lines)
