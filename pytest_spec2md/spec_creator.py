@@ -1,6 +1,7 @@
 import datetime
 import importlib
 import os
+import inspect
 
 import _pytest.reports
 
