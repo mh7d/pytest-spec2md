@@ -5,39 +5,23 @@ import os
 import _pytest.reports
 
 
-def modify_items_of_collection(session, config, items):
-    """
-    Sort the found tests for better results in output
-    """
-    _delete_existing_file(config.getini('spec_target_file'))
-
-    def get_module_name(f):
-        return f.listchain()[1].name
-
-    def get_nodeid(f):
-        return "::".join(f.nodeid.split('::')[:-1])
-
-    items.sort(key=get_nodeid)
-    items.sort(key=get_module_name)
-    return items
-
-
-def _delete_existing_file(filename):
+def delete_existing_specification_file(config):
+    filename = config.getini('spec_target_file')
     if os.path.exists(filename):
         os.remove(filename)
 
 
-def create_logreport(self, report: _pytest.reports.TestReport, use_terminal=True):
-    filename = self.config.getini('spec_target_file')
-    _create_spec_file_if_not_exists(os.path.join(os.getcwd(), filename))
+def create_specification_document(self, report: _pytest.reports.TestReport, default_func=None):
+    if default_func:
+        default_func(self, report)
+
     if report.when == 'call':
+        filename = self.config.getini('spec_target_file')
+        _create_spec_file_if_not_exists(os.path.join(os.getcwd(), filename))
+
         result, _, _ = self.config.hook.pytest_report_teststatus(report=report, config=self.config)
-        self.stats.setdefault(result, []).append(report)
 
         _write_node_to_file(filename, _create_file_content(report, result))
-
-        if use_terminal:
-            print(f'{report.nodeid} {"." if report.passed else "F"}')
 
 
 def _create_spec_file_if_not_exists(filename):
@@ -57,8 +41,8 @@ def _create_file_content(report, state):
     return report
 
 
-def _split_scope(testnode):
-    data = [i for i in testnode.split('::') if i != '()']
+def _split_scope(test_node):
+    data = [i for i in test_node.split('::') if i != '()']
     if data[-1].endswith("]"):
         data[-1] = data[-1].split("[")[0]
     return data
