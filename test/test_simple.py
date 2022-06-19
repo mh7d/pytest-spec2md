@@ -8,6 +8,7 @@ import xml.etree.ElementTree as et
 @pytest.fixture
 def pytester_simple(request, pytester):
     test_data_dir = os.path.join(request.config.rootdir, 'pytester_cases', 'case_simple')
+    TestUseCaseSimple.test_data_dir = test_data_dir
 
     pytester.syspathinsert(os.path.join(request.config.rootdir, 'pytest_spec2md'))
     pytester.parseconfigure(os.path.join(request.config.rootdir, 'pytester_cases', 'pytester.config'))
@@ -23,24 +24,39 @@ def pytester_simple(request, pytester):
     return pytester
 
 
-def test_simple_runs_4_successful_tests(pytester_simple: pytest.Pytester):
-    result = pytester_simple.runpytest("--spec2md")
-    result.assert_outcomes(passed=4)
+class TestUseCaseSimple:
+    test_data_dir = ""
 
+    def test_runs_4_successful_tests(self, pytester_simple: pytest.Pytester):
+        result = pytester_simple.runpytest("--spec2md")
+        result.assert_outcomes(passed=4)
 
-def test_simple_creates_13_lines_of_documentation(pytester_simple: pytest.Pytester):
-    pytester_simple.runpytest("--spec2md")
+    def test_creates_13_lines_of_documentation(self, pytester_simple: pytest.Pytester):
+        pytester_simple.runpytest("--spec2md")
 
-    with open(os.path.join(pytester_simple.path, 'documentation/spec.md')) as spec_file:
-        spec = spec_file.readlines()
+        with open(os.path.join(pytester_simple.path, 'documentation/spec.md')) as spec_file:
+            spec = spec_file.readlines()
 
-    assert len(spec) == 13
+        assert len(spec) == 13
 
+    def test_creates_markdown_as_provided(self, pytester_simple: pytest.Pytester):
+        pytester_simple.runpytest("--spec2md")
 
-def test_spec_created_using_junit_and_cov(pytester_simple: pytest.Pytester):
-    pytester_simple.runpytest("--spec2md", "--junitxml=junit.xml")
+        with open(os.path.join(TestUseCaseSimple.test_data_dir, 'result.md')) as expected:
+            expected_result = expected.readlines()
+            print(expected_result)
 
-    assert os.path.exists(os.path.join(pytester_simple.path, 'documentation/spec.md'))
+        with open(os.path.join(pytester_simple.path, 'documentation/spec.md')) as spec_file:
+            actual_result = spec_file.readlines()
+            print(actual_result)
+
+        diff = [(x, y) for (x, y) in zip(expected_result, actual_result) if (x != y) and str(x).find('XXXX') == -1]
+        assert not diff
+
+    def test_spec_created_using_junit_and_cov(self, pytester_simple: pytest.Pytester):
+        pytester_simple.runpytest("--spec2md", "--junitxml=junit.xml")
+
+        assert os.path.exists(os.path.join(pytester_simple.path, 'documentation/spec.md'))
 
 
 def test_junitxml_creates_4_testcases(pytester_simple: pytest.Pytester):
