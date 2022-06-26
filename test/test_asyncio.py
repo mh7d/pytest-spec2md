@@ -18,22 +18,26 @@ def pytester_asyncio(request, pytester):
         source = "".join(file_content.readlines())
         pytester.makepyfile(source)
 
+    with open(os.path.join(request.config.rootdir, 'pytester_cases', 'pytester.config')) as file_content:
+        source = "".join(file_content.readlines())
+        pytester.getinicfg(source)
+
     return pytester
 
 
 def test_simple_runs_4_successful_tests(pytester_asyncio: pytest.Pytester):
-    result = pytester_asyncio.runpytest("--spec2md")
+    result = pytester_asyncio.runpytest()
     result.assert_outcomes(passed=4)
 
 
 def test_spec_created_using_junit_and_cov(pytester_asyncio: pytest.Pytester):
-    pytester_asyncio.runpytest("--spec2md", "--junitxml=junit.xml")
+    pytester_asyncio.runpytest("--junitxml=junit.xml")
 
     assert os.path.exists(os.path.join(pytester_asyncio.path, 'documentation/spec.md'))
 
 
 def test_junitxml_creates_4_testcases(pytester_asyncio: pytest.Pytester):
-    pytester_asyncio.runpytest("--spec2md", "--junitxml=junit.xml")
+    pytester_asyncio.runpytest("--junitxml=junit.xml")
 
     root_node = et.parse(os.path.join(pytester_asyncio.path, 'junit.xml')).getroot()
     test_cases = root_node.findall('.//*')

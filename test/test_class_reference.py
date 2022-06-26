@@ -21,16 +21,16 @@ def pytester_reference(request, pytester):
 
 
 def test_runs_1_successful_tests(pytester_reference: pytest.Pytester):
-    result = pytester_reference.runpytest("--spec2md")
+    result = pytester_reference.runpytest("--no-cov", "--spec2md")
     result.assert_outcomes(passed=1)
 
 
-def test_creates_18_lines_of_documentation(pytester_reference: pytest.Pytester):
-    pytester_reference.runpytest("--spec2md")
+def test_creates_19_lines_of_documentation(pytester_reference: pytest.Pytester):
+    pytester_reference.runpytest("--no-cov", "--spec2md")
 
     with open(os.path.join(pytester_reference.path, 'documentation/spec.md')) as spec:
         spec = spec.readlines()
 
-    assert len(spec) == 18
+    assert len(spec) == 19
 
 

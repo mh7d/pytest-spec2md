@@ -18,6 +18,10 @@ def pytester_advanced(request, pytester):
         source = "".join(file_content.readlines())
         pytester.makepyfile(source)
 
+    with open(os.path.join(request.config.rootdir, 'pytester_cases', 'pytester.config')) as file_content:
+        source = "".join(file_content.readlines())
+        pytester.getinicfg(source)
+
     return pytester
 
 
