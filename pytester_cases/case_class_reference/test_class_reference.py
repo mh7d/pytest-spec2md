@@ -17,6 +17,5 @@ class TestMyClass:
         """this is the documentation for the function test class"""
 
         def test_passes_every_time(self):
-            print(dir(MyClass))
             """this is the implementation of the test"""
             assert True

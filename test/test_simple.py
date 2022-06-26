@@ -44,11 +44,9 @@ class TestUseCaseSimple:
 
         with open(os.path.join(TestUseCaseSimple.test_data_dir, 'result.md')) as expected:
             expected_result = expected.readlines()
-            print(expected_result)
 
         with open(os.path.join(pytester_simple.path, 'documentation/spec.md')) as spec_file:
             actual_result = spec_file.readlines()
-            print(actual_result)
 
         diff = [(x, y) for (x, y) in zip(expected_result, actual_result) if (x != y) and str(x).find('XXXX') == -1]
         assert not diff

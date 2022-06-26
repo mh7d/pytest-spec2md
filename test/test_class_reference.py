@@ -22,7 +22,6 @@ def pytester_reference(request, pytester):
 
 def test_runs_1_successful_tests(pytester_reference: pytest.Pytester):
     result = pytester_reference.runpytest("--spec2md")
-    print(result.stderr)
     result.assert_outcomes(passed=1)
 
 
