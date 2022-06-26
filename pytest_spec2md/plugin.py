@@ -44,6 +44,13 @@ def pytest_configure(config):
 
 
 @pytest.hookimpl(hookwrapper=True)
+def pytest_collection_modifyitems(items):
+    outcome = yield
+    sorter = pytest_spec2md.spec_creator.TestcaseSorter(items)
+    sorter.sort_by_layer()
+
+
+@pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):
     """Adds docstring to the item usage in report"""
     outcome = yield

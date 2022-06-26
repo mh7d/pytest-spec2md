@@ -1,6 +1,5 @@
 import pytest_spec2md.plugin
 import pytest_spec2md.spec_creator
-from collections import namedtuple
 
 
 class A1:
