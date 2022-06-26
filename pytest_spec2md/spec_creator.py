@@ -4,6 +4,36 @@ import os
 import inspect
 
 import _pytest.reports
+import pytest
+
+
+class TestcaseSorter:
+
+    def __init__(self, items: list[pytest.Item]):
+        self._items = items
+
+    @staticmethod
+    def split_name_of_item_by_path(item: pytest.Item):
+        return item.nodeid.split('::', maxsplit=1)
+
+    @staticmethod
+    def rename_for_sorting(entry: str, splitter: str = '/'):
+        depth = entry.count(splitter)
+        if depth == 0:
+            return f'{0}_'
+        split_entry = entry.split(splitter)
+        return '1_' + "_1_".join(split_entry[:-1]) + f'{splitter}{0}_'
+
+    def sort_by_layer(self):
+        self._items.sort(
+            key=lambda x:
+            self.rename_for_sorting(self.split_name_of_item_by_path(x)[0]) +
+            self.rename_for_sorting(self.split_name_of_item_by_path(x)[1], '::')
+        )
+
+    @property
+    def items(self):
+        return self._items
 
 
 class SpecWriter:
