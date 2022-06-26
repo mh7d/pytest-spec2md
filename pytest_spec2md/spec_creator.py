@@ -123,7 +123,7 @@ class SpecWriter:
                     line_start += '#'
 
             if print_testcase or act_tc_name != last_tc_name:
-                tc = getattr(node_content, "node", None)
+                tc = getattr(node_content, "node_obj", None)
                 doc_lines = self.format_doc_string(getattr(tc, "__doc__"))
 
                 file.write(
@@ -161,10 +161,10 @@ class ItemEnhancer:
 
     @classmethod
     def enhance(cls, outcome, item):
-        report = outcome.get_result()
+        report = outcome.get_result()  # type: _pytest.reports.TestReport
         node = getattr(item, 'obj', None)
         if node:
-            report.node = node
+            report.node_obj = node
             report.node_parents = []
             parent = cls.get_parent(node)
             while parent:

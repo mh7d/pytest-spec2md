@@ -40,7 +40,5 @@ def test_junitxml_creates_4_testcases(pytester_asyncio: pytest.Pytester):
 
     assert sum(x.tag == 'testsuite' for x in test_cases) == 1
 
-    # see: https://github.com/pytest-dev/pytest-asyncio/issues/369 generates 5 instead of 4
-    assert sum(x.tag == 'testcase' for x in test_cases) == 5
-
+    assert sum(x.tag == 'testcase' for x in test_cases) == 4
 
