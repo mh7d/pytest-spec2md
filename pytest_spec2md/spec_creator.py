@@ -2,6 +2,7 @@ import datetime
 import importlib
 import os
 import inspect
+import typing
 
 import _pytest.reports
 import pytest
@@ -9,7 +10,7 @@ import pytest
 
 class TestcaseSorter:
 
-    def __init__(self, items: list[pytest.Item]):
+    def __init__(self, items: typing.List[pytest.Item]):
         self._items = items
 
     @staticmethod
