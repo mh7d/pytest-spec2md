@@ -33,7 +33,7 @@ def test_simple_runs_4_successful_tests(pytester_asyncio: pytest.Pytester):
 def test_spec_created_using_junit_and_cov(pytester_asyncio: pytest.Pytester):
     pytester_asyncio.runpytest("--junitxml=junit.xml")
 
-    assert os.path.exists(os.path.join(pytester_asyncio.path, 'documentation/spec.md'))
+    assert os.path.exists(os.path.join(pytester_asyncio.path, 'docs/test_spec.md'))
 
 
 def test_junitxml_creates_4_testcases(pytester_asyncio: pytest.Pytester):

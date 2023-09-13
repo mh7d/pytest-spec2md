@@ -35,7 +35,7 @@ class TestUseCaseMultiple:
         with open(os.path.join(TestUseCaseMultiple.test_data_dir, 'result.md')) as expected:
             expected_result = expected.readlines()
 
-        with open(os.path.join(pytester_multiple.path, 'documentation/spec.md')) as spec_file:
+        with open(os.path.join(pytester_multiple.path, 'docs/test_spec.md')) as spec_file:
             actual_result = spec_file.readlines()
 
         diff = [(x, y) for (x, y) in zip(expected_result, actual_result) if (x != y) and str(x).find('XXXX') == -1]

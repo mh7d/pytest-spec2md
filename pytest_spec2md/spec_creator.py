@@ -1,9 +1,10 @@
 import datetime
 import importlib
-import os
 import inspect
+import os
 import typing
 
+import _pytest.nodes
 import _pytest.reports
 import pytest
 
@@ -38,45 +39,45 @@ class TestcaseSorter:
 
 
 class SpecWriter:
-    _act_writer: 'SpecWriter' = None
+    _act_writers: dict[type, 'SpecWriter'] = {}
 
-    def __init__(self, filename: str):
-        self._last_parents: list = []
-        self._last_node_content: _pytest.reports.TestReport = None
-        self._filename = filename
-        self._create_spec_file_if_not_exists()
+    def __init__(self, config):
+        self._config = config
 
-    @property
-    def filename(self):
-        return self._filename
+    def write_node_to_file(self, report: _pytest.reports.TestReport):
+        raise NotImplemented
+
+    @classmethod
+    def clear_writer(cls):
+        cls._act_writers.clear()
+
+    @classmethod
+    def get_writer(cls, writer_type: type, config):
+        if config and config.option.spec2md:
+            if writer_type not in cls._act_writers:
+                cls._act_writers[writer_type] = writer_type(config)
+
+        return cls._act_writers.get(writer_type, None)
 
     @classmethod
     def delete_existing_specification_file(cls, config):
-        filename = config.getini('spec_target_file')
-        if os.path.exists(filename):
-            os.remove(filename)
+        filenames = config.getini('test_spec_target_file'), config.getini('spec_target_file')
+        for filename in filenames:
+            if os.path.exists(filename):
+                os.remove(filename)
 
         cls._act_writer = None
 
     @classmethod
-    def create_specification_document(cls, config, report: _pytest.reports.TestReport):
-        if SpecWriter._act_writer is None:
-            filename = config.getini('spec_target_file')
-            cls._act_writer = SpecWriter(os.path.join(os.getcwd(), filename))
+    def create_specification_documents(cls, config, report: _pytest.reports.TestReport):
+        if not config.option.spec2md:
+            return
 
-        cls._act_writer.write_node_to_file(report)
+        cls.get_writer(TestSpecWriter, config)
+        cls.get_writer(SpecWithTestsWriter, config)
 
-    def _create_spec_file_if_not_exists(self):
-        if not os.path.exists(self.filename):
-            os.makedirs(os.path.dirname(self.filename), exist_ok=True)
-
-            with open(self.filename, 'w') as file:
-                file.writelines([
-                    '# Specification\n',
-                    'Automatically generated using pytest_spec2md  \n'
-                    f'Generated: {datetime.datetime.now()}  \n'
-                    f'\n',
-                ])
+        for writer in cls._act_writers.values():
+            writer.write_node_to_file(report)
 
     @staticmethod
     def split_scope(test_node):
@@ -105,6 +106,34 @@ class SpecWriter:
         if not doc_string:
             return []
         return [x.strip() for x in doc_string.split("\n") if x.strip()]
+
+
+class TestSpecWriter(SpecWriter):
+
+    def __init__(self, config):
+        super().__init__(config)
+        self._last_parents: list = []
+        self._last_node_content: _pytest.reports.TestReport = None
+        self._filename = config.getini('test_spec_target_file')
+        self._create_spec_file_if_not_exists()
+
+    @property
+    def filename(self):
+        return self._filename
+
+    def _create_spec_file_if_not_exists(self):
+        if os.path.exists(self.filename):
+            return
+
+        os.makedirs(os.path.dirname(self.filename), exist_ok=True)
+
+        with open(self.filename, 'w') as file:
+            file.writelines([
+                '# Specification\n',
+                'Automatically generated using pytest_spec2md  \n'
+                f'Generated: {datetime.datetime.now()}  \n'
+                f'\n',
+            ])
 
     def write_node_to_file(self, node_content: _pytest.reports.TestReport):
         self._create_spec_file_if_not_exists()
@@ -188,6 +217,66 @@ class SpecWriter:
                 )
 
 
+class SpecWithTestsWriter(SpecWriter):
+
+    def __init__(self, config):
+        super().__init__(config)
+
+        self._grouped_tests: dict[str, list[_pytest.nodes.Node]] = {}
+        self._source_file = config.getini('spec_source_file')
+
+        self._target_file = config.getini('spec_target_file')
+        self._results = {}
+
+    def write_node_to_file(self, report: _pytest.reports.TestReport):
+        self._results[report.nodeid] = report.outcome
+
+    def add_test(self, key: str, test: _pytest.nodes.Node):
+        if key not in self._grouped_tests:
+            self._grouped_tests[key] = []
+
+        self._grouped_tests[key].append(test)
+
+    def write_final_report(self):
+        if not self._source_file or not self._target_file:
+            return
+
+        content = self._get_content()
+
+        with open(self._target_file, 'w') as target:
+            for line in content:
+                target.write(line)
+
+    def _get_content(self):
+        if not self._source_file or not os.path.exists(self._source_file):
+            return
+
+        with open(self._source_file) as source:
+            for line in source.readlines():
+                if line.startswith('<!-- TestRef: '):
+                    line = line.strip()
+                    identifier = line[13:-3].strip()
+                    for entry in self._format_tests(identifier):
+                        yield entry
+                    continue
+
+                yield line
+
+    def _format_tests(self, identifier: str):
+        if identifier not in self._grouped_tests:
+            return
+
+        items =  self._grouped_tests[identifier]
+
+        yield '#### Proves for feature \n'
+        yield f'Number: {len(items)} \n'
+        yield '\n'
+
+        yield '| Name | Explanation | Path | Result | \n'
+        yield '| ---- | ----------- | ---- | ------ | \n'
+        for item in items:
+            yield f"| {item.name} | {item.obj.__doc__} | {item.nodeid} | {self._results[item.nodeid]} | \n"
+
 class ItemEnhancer:
 
     @classmethod
@@ -204,7 +293,7 @@ class ItemEnhancer:
             report.node_parents.reverse()
 
             report.reference_docs = []
-            for marker in item.iter_markers_with_node(name='spec_reference'):
+            for marker in item.iter_markers_with_node(name='func_reference'):
                 report.reference_docs.append((marker[0], marker[1].args))
 
     @staticmethod
