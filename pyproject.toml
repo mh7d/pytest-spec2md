@@ -26,7 +26,7 @@ include = ["LICENSE"]
 [tool.poetry.dependencies]
 python = ">3.9"
 pytest = ">7.0"
-backports_strenum = ">1.2.4"
+backports_strenum = ">1.2"
 
 [tool.poetry.dev-dependencies]
 mock = ">1.0.1"
