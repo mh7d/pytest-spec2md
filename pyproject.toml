@@ -24,7 +24,7 @@ packages = [
 include = ["LICENSE"]
 
 [tool.poetry.dependencies]
-python = ">3.9"
+python = ">3.9, <4"
 pytest = ">7.0"
 backports_strenum = ">1.2"
 
