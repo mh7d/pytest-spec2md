@@ -1,12 +1,30 @@
 import datetime
 import importlib
-import os
 import inspect
+import os
 import typing
+import warnings
 
+import _pytest.nodes
 import _pytest.reports
 import pytest
 
+import sys
+
+if sys.version_info >= (3, 11):
+    from enum import StrEnum
+else:
+    from backports.strenum import StrEnum
+
+class TestType(StrEnum):
+    UNIT = "Unit Test"
+    INTEGRATION = "Integration Test"
+    SYSTEM = "System Test"
+    ACCEPTANCE = "Acceptance Test"
+
+    USABILITY = "Usability Test"
+    PERFORMANCE = "Performance Test"
+    SECURITY = "Security Test"
 
 class TestcaseSorter:
 
@@ -38,45 +56,45 @@ class TestcaseSorter:
 
 
 class SpecWriter:
-    _act_writer: 'SpecWriter' = None
+    _act_writers: dict[type, 'SpecWriter'] = {}
 
-    def __init__(self, filename: str):
-        self._last_parents: list = []
-        self._last_node_content: _pytest.reports.TestReport = None
-        self._filename = filename
-        self._create_spec_file_if_not_exists()
+    def __init__(self, config):
+        self._config = config
 
-    @property
-    def filename(self):
-        return self._filename
+    def write_node_to_file(self, report: _pytest.reports.TestReport):
+        raise NotImplemented
+
+    @classmethod
+    def clear_writer(cls):
+        cls._act_writers.clear()
+
+    @classmethod
+    def get_writer(cls, writer_type: type, config):
+        if config and config.option.spec2md:
+            if writer_type not in cls._act_writers:
+                cls._act_writers[writer_type] = writer_type(config)
+
+        return cls._act_writers.get(writer_type, None)
 
     @classmethod
     def delete_existing_specification_file(cls, config):
-        filename = config.getini('spec_target_file')
-        if os.path.exists(filename):
-            os.remove(filename)
+        filenames = config.getini('test_spec_target_file'), config.getini('spec_target_file')
+        for filename in filenames:
+            if os.path.exists(filename):
+                os.remove(filename)
 
         cls._act_writer = None
 
     @classmethod
-    def create_specification_document(cls, config, report: _pytest.reports.TestReport):
-        if SpecWriter._act_writer is None:
-            filename = config.getini('spec_target_file')
-            cls._act_writer = SpecWriter(os.path.join(os.getcwd(), filename))
+    def create_specification_documents(cls, config, report: _pytest.reports.TestReport):
+        if not config.option.spec2md:
+            return
 
-        cls._act_writer.write_node_to_file(report)
+        cls.get_writer(TestSpecWriter, config)
+        cls.get_writer(SpecWithTestsWriter, config)
 
-    def _create_spec_file_if_not_exists(self):
-        if not os.path.exists(self.filename):
-            os.makedirs(os.path.dirname(self.filename), exist_ok=True)
-
-            with open(self.filename, 'w') as file:
-                file.writelines([
-                    '# Specification\n',
-                    'Automatically generated using pytest_spec2md  \n'
-                    f'Generated: {datetime.datetime.now()}  \n'
-                    f'\n',
-                ])
+        for writer in cls._act_writers.values():
+            writer.write_node_to_file(report)
 
     @staticmethod
     def split_scope(test_node):
@@ -105,6 +123,34 @@ class SpecWriter:
         if not doc_string:
             return []
         return [x.strip() for x in doc_string.split("\n") if x.strip()]
+
+
+class TestSpecWriter(SpecWriter):
+
+    def __init__(self, config):
+        super().__init__(config)
+        self._last_parents: list = []
+        self._last_node_content: _pytest.reports.TestReport = None
+        self._filename = config.getini('test_spec_target_file')
+        self._create_spec_file_if_not_exists()
+
+    @property
+    def filename(self):
+        return self._filename
+
+    def _create_spec_file_if_not_exists(self):
+        if os.path.exists(self.filename):
+            return
+
+        os.makedirs(os.path.dirname(self.filename), exist_ok=True)
+
+        with open(self.filename, 'w') as file:
+            file.writelines([
+                '# Specification\n',
+                'Automatically generated using pytest_spec2md  \n'
+                f'Generated: {datetime.datetime.now()}  \n'
+                f'\n',
+            ])
 
     def write_node_to_file(self, node_content: _pytest.reports.TestReport):
         self._create_spec_file_if_not_exists()
@@ -188,6 +234,98 @@ class SpecWriter:
                 )
 
 
+class SpecWithTestsWriter(SpecWriter):
+
+    def __init__(self, config):
+        super().__init__(config)
+
+        self._grouped_tests: dict[str, list[_pytest.nodes.Node]] = {}
+        self._source_file = config.getini('spec_source_file')
+
+        self._target_file = config.getini('spec_target_file')
+
+        self._version = config.option.spec2md_version
+        self._test_run_id = f'TestRun {datetime.datetime.now():%Y-%m-%d %H:%M}'
+
+        self._results: dict[str, _pytest.reports.TestReport] = {}
+
+    def write_node_to_file(self, report: _pytest.reports.TestReport):
+        self._results[report.nodeid] = report
+
+    def add_test(self, key: str, test: _pytest.nodes.Node):
+        if key not in self._grouped_tests:
+            self._grouped_tests[key] = []
+
+        self._grouped_tests[key].append(test)
+
+    def write_final_report(self):
+        if not self._source_file or not self._target_file:
+            return
+
+        content = self._get_content()
+
+        with open(self._target_file, 'w') as target:
+            for line in content:
+                target.write(line)
+
+    def _get_content(self):
+        if not self._source_file or not os.path.exists(self._source_file):
+            return
+
+        used_identifier = []
+
+        with open(self._source_file) as source:
+            for line in source.readlines():
+                yield from self._process_line(line, used_identifier)
+
+        self._check_for_usage(used_identifier)
+
+    def _process_line(self, line, used_identifier):
+        yield line
+
+        line = line.strip()
+        if line.startswith('<!-- TestRef:') and line.endswith('-->'):
+            identifier = line[13:-3].strip()
+            used_identifier.append(identifier)
+            for entry in self._format_tests(identifier):
+                yield entry
+
+    def _check_for_usage(self, used_identifier):
+        for key in self._grouped_tests:
+            if key not in used_identifier:
+                warnings.warn(UserWarning(f'Identifier {key} was not used in the spec document {self._source_file}.'))
+
+    def _format_tests(self, identifier: str):
+        if identifier not in self._grouped_tests:
+            warnings.warn(UserWarning(f'Identifier {identifier} in file {self._source_file}'
+                                      f' is not used in any test.'))
+            yield f'> **No Proves found for Reference *{identifier}*** \n'
+            return
+
+        items = self._grouped_tests[identifier]
+
+        yield f'> **Proved by Tests for Reference *{identifier}*** \n'
+        yield '>\n'
+        yield (f'> The following tests proved this feature in the test run *{self._test_run_id}* '
+               f'on version {self._version}.\n')
+        yield '>\n'
+
+        yield '>>| # |   | Name | Type | Explanation | Path |  \n'
+        yield '>>| --- | --- | --- | --- | --- | --- | \n'
+        for index, item in enumerate(items):
+            report = self._results[item.nodeid]
+            yield (f">>| { index + 1 } | "
+                   f"{ ':heavy_check_mark:' if report.passed else ':x:' } | "
+                   f"{ self.format_test_name(item.name) } | "
+                   f"{ getattr(report, 'test_type') if hasattr(report, 'test_type') else TestType.UNIT } | "
+                   f"{ ' '.join(self.format_doc_string(item.obj.__doc__)) } | "
+                   f"{ item.nodeid } | "
+                   f"\n")
+
+        yield '\n'
+        yield '\n'
+
+
 class ItemEnhancer:
 
     @classmethod
@@ -204,8 +342,11 @@ class ItemEnhancer:
             report.node_parents.reverse()
 
             report.reference_docs = []
-            for marker in item.iter_markers_with_node(name='spec_reference'):
+            for marker in item.iter_markers_with_node(name='func_reference'):
                 report.reference_docs.append((marker[0], marker[1].args))
+
+            for marker in item.iter_markers_with_node(name='test_type'):
+                report.test_type = ", ".join(marker[1].args)
 
     @staticmethod
     def get_parent(obj):

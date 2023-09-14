@@ -28,7 +28,7 @@ def test_runs_1_successful_tests(pytester_reference: pytest.Pytester):
 def test_creates_19_lines_of_documentation(pytester_reference: pytest.Pytester):
     pytester_reference.runpytest("--no-cov", "--spec2md")
 
-    with open(os.path.join(pytester_reference.path, 'documentation/spec.md')) as spec:
+    with open(os.path.join(pytester_reference.path, 'docs/test_spec.md')) as spec:
         spec = spec.readlines()
 
     assert len(spec) == 19

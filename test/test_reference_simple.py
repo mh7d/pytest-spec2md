@@ -32,7 +32,7 @@ def test_runs_1_successful_tests(pytester_reference: pytest.Pytester):
 def test_creates_12_lines_of_documentation(pytester_reference: pytest.Pytester):
     pytester_reference.runpytest("--spec2md")
 
-    with open(os.path.join(pytester_reference.path, 'documentation/spec.md')) as spec:
+    with open(os.path.join(pytester_reference.path, 'docs/test_spec.md')) as spec:
         spec = spec.readlines()
 
     assert len(spec) == 12
@@ -41,7 +41,7 @@ def test_creates_12_lines_of_documentation(pytester_reference: pytest.Pytester):
 def test_contains_referenced_func_name_in_spec(pytester_reference: pytest.Pytester):
     pytester_reference.runpytest("--spec2md")
 
-    with open(os.path.join(pytester_reference.path, 'documentation/spec.md')) as spec:
+    with open(os.path.join(pytester_reference.path, 'docs/test_spec.md')) as spec:
         spec = spec.readlines()
 
     assert any(x.find('function_to_ref') >= 0 for x in spec)

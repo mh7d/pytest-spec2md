@@ -8,11 +8,11 @@ class MyClass:
         """this is the documentation for *function_to_test*"""
 
 
-@pytest.mark.spec_reference(MyClass.__qualname__, MyClass.__doc__)
+@pytest.mark.func_reference(MyClass.__qualname__, MyClass.__doc__)
 class TestMyClass:
     """this is the documentation for the Test Class"""
 
-    @pytest.mark.spec_reference(MyClass.function_to_test.__qualname__, MyClass.function_to_test.__doc__)
+    @pytest.mark.func_reference(MyClass.function_to_test.__qualname__, MyClass.function_to_test.__doc__)
     class TestFunctionToTest:
         """this is the documentation for the function test class"""
 
