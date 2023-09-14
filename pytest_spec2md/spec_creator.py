@@ -1,13 +1,25 @@
 import datetime
+import enum
 import importlib
 import inspect
 import os
 import typing
+import warnings
 
 import _pytest.nodes
 import _pytest.reports
 import pytest
 
+
+class TestType(enum.StrEnum):
+    UNIT = "Unit Test"
+    INTEGRATION = "Integration Test"
+    SYSTEM = "System Test"
+    ACCEPTANCE = "Acceptance Test"
+
+    USABILITY = "Usability Test"
+    PERFORMANCE = "Performance Test"
+    SECURITY = "Security Test"
 
 class TestcaseSorter:
 
@@ -226,10 +238,14 @@ class SpecWithTestsWriter(SpecWriter):
         self._source_file = config.getini('spec_source_file')
 
         self._target_file = config.getini('spec_target_file')
-        self._results = {}
+
+        self._version = config.option.spec2md_version
+        self._test_run_id = f'TestRun {datetime.datetime.now():%Y-%m-%d %H:%M}'
+
+        self._results: dict[str, _pytest.reports.TestReport] = {}
 
     def write_node_to_file(self, report: _pytest.reports.TestReport):
-        self._results[report.nodeid] = report.outcome
+        self._results[report.nodeid] = report
 
     def add_test(self, key: str, test: _pytest.nodes.Node):
         if key not in self._grouped_tests:
@@ -251,31 +267,59 @@ class SpecWithTestsWriter(SpecWriter):
         if not self._source_file or not os.path.exists(self._source_file):
             return
 
+        used_identifier = []
+
         with open(self._source_file) as source:
             for line in source.readlines():
-                if line.startswith('<!-- TestRef: '):
-                    line = line.strip()
-                    identifier = line[13:-3].strip()
-                    for entry in self._format_tests(identifier):
-                        yield entry
-                    continue
+                yield from self._process_line(line, used_identifier)
 
-                yield line
+        self._check_for_usage(used_identifier)
+
+    def _process_line(self, line, used_identifier):
+        yield line
+
+        line = line.strip()
+        if line.startswith('<!-- TestRef:') and line.endswith('-->'):
+            identifier = line[13:-3].strip()
+            used_identifier.append(identifier)
+            for entry in self._format_tests(identifier):
+                yield entry
+
+    def _check_for_usage(self, used_identifier):
+        for key in self._grouped_tests:
+            if key not in used_identifier:
+                warnings.warn(UserWarning(f'Identifier {key} was not used in the spec document {self._source_file}.'))
 
     def _format_tests(self, identifier: str):
         if identifier not in self._grouped_tests:
+            warnings.warn(UserWarning(f'Identifier {identifier} in file {self._source_file}'
+                                      f' is not used in any test.'))
+            yield f'> **No Proves found for Reference *{identifier}*** \n'
             return
 
-        items =  self._grouped_tests[identifier]
+        items = self._grouped_tests[identifier]
 
-        yield '#### Proves for feature \n'
-        yield f'Number: {len(items)} \n'
+        yield f'> **Proved by Tests for Reference *{identifier}*** \n'
+        yield '>\n'
+        yield (f'> The following tests proved this feature in the test run *{self._test_run_id}* '
+               f'on version {self._version}.\n')
+        yield '>\n'
+
+        yield '>>| # |   | Name | Type | Explanation | Path |  \n'
+        yield '>>| --- | --- | --- | --- | --- | --- | \n'
+        for index, item in enumerate(items):
+            report = self._results[item.nodeid]
+            yield (f">>| { index + 1 } | "
+                   f"{ ':heavy_check_mark:' if report.passed else ':x:' } | "
+                   f"{ self.format_test_name(item.name) } | "
+                   f"{ getattr(report, 'test_type') if hasattr(report, 'test_type') else TestType.UNIT } | "
+                   f"{ ' '.join(self.format_doc_string(item.obj.__doc__)) } | "
+                   f"{ item.nodeid } | "
+                   f"\n")
+
+        yield '\n'
         yield '\n'
 
-        yield '| Name | Explanation | Path | Result | \n'
-        yield '| ---- | ----------- | ---- | ------ | \n'
-        for item in items:
-            yield f"| {item.name} | {item.obj.__doc__} | {item.nodeid} | {self._results[item.nodeid]} | \n"
 
 class ItemEnhancer:
 
@@ -295,6 +339,9 @@ class ItemEnhancer:
             report.reference_docs = []
             for marker in item.iter_markers_with_node(name='func_reference'):
                 report.reference_docs.append((marker[0], marker[1].args))
+
+            for marker in item.iter_markers_with_node(name='test_type'):
+                report.test_type = ", ".join(marker[1].args)
 
     @staticmethod
     def get_parent(obj):

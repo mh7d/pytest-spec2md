@@ -1,6 +1,7 @@
 import _pytest.nodes
 import _pytest.terminal
 import pytest
+from pytest_spec2md.spec_creator import TestType
 
 import pytest_spec2md.spec_creator
 
@@ -12,6 +13,14 @@ def pytest_addoption(parser):
         action='store_true',
         dest='spec2md',
         help='Creates multiple specification document in markdown format.'
+    )
+
+    group = parser.getgroup("spec2md", "Options for spec2md plugin")
+    group.addoption(
+        '--spec2md-version',
+        default='unknown',
+        dest='spec2md_version',
+        help='Version to be used to document tested version'
     )
 
     parser.addini(
@@ -56,6 +65,9 @@ def pytest_configure(config):
     )
     config.addinivalue_line(
         "markers", "spec_identifier(identifiers): identifiers used in specification document"
+    )
+    config.addinivalue_line(
+        "markers", "test_type(types): Types for test. TestType Enum could be used."
     )
 
     pytest_spec2md.spec_creator.SpecWriter.get_writer(pytest_spec2md.spec_creator.SpecWithTestsWriter, config)

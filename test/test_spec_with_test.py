@@ -30,14 +30,13 @@ def pytester_spec_with_test(request, pytester):
 class TestUseCaseWithSpec:
     test_data_dir = ""
 
-    def test_runs_4_successful_tests(self, pytester_spec_with_test: pytest.Pytester):
+    def test_runs_5_successful_tests(self, pytester_spec_with_test: pytest.Pytester):
         result = pytester_spec_with_test.runpytest()
-        result.assert_outcomes(passed=4)
+        result.assert_outcomes(passed=5, failed=1)
 
     def test_creates_doc_file(self, pytester_spec_with_test: pytest.Pytester):
         result = pytester_spec_with_test.runpytest()
         assert os.path.exists(os.path.join(pytester_spec_with_test.path, 'docs/spec_with_tests.md'))
-
 
     def test_contains_test_data(self, pytester_spec_with_test: pytest.Pytester):
         pytester_spec_with_test.runpytest()
@@ -49,9 +48,9 @@ class TestUseCaseWithSpec:
                 if line.startswith('<!-- TestRef:'):
                     found_comment = True
 
-                if line.startswith('#### Proves for feature'):
+                if line.startswith('> **Proved by Tests for Reference *'):
                     found_replacement = True
 
-        assert found_comment is False
+        assert found_comment is True
 
         assert found_replacement is True
