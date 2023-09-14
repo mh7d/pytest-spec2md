@@ -1,5 +1,4 @@
 import datetime
-import enum
 import importlib
 import inspect
 import os
@@ -10,8 +9,14 @@ import _pytest.nodes
 import _pytest.reports
 import pytest
 
+import sys
 
-class TestType(enum.StrEnum):
+if sys.version_info >= (3, 11):
+    from enum import StrEnum
+else:
+    from backports.strenum import StrEnum
+
+class TestType(StrEnum):
     UNIT = "Unit Test"
     INTEGRATION = "Integration Test"
     SYSTEM = "System Test"
