@@ -2,6 +2,7 @@ import datetime
 import importlib
 import inspect
 import os
+import sys
 import typing
 import warnings
 
@@ -9,12 +10,11 @@ import _pytest.nodes
 import _pytest.reports
 import pytest
 
-import sys
-
 if sys.version_info >= (3, 11):
     from enum import StrEnum
 else:
     from backports.strenum import StrEnum
+
 
 class TestType(StrEnum):
     UNIT = "Unit Test"
@@ -25,6 +25,7 @@ class TestType(StrEnum):
     USABILITY = "Usability Test"
     PERFORMANCE = "Performance Test"
     SECURITY = "Security Test"
+
 
 class TestcaseSorter:
 
@@ -234,6 +235,10 @@ class TestSpecWriter(SpecWriter):
                 )
 
 
+class SpecIdentifierWarning(UserWarning):
+    pass
+
+
 class SpecWithTestsWriter(SpecWriter):
 
     def __init__(self, config):
@@ -293,12 +298,12 @@ class SpecWithTestsWriter(SpecWriter):
     def _check_for_usage(self, used_identifier):
         for key in self._grouped_tests:
             if key not in used_identifier:
-                warnings.warn(UserWarning(f'Identifier {key} was not used in the spec document {self._source_file}.'))
+                warnings.warn(Warning(f'Identifier {key} was not used in the spec document {self._source_file}.'))
 
     def _format_tests(self, identifier: str):
         if identifier not in self._grouped_tests:
-            warnings.warn(UserWarning(f'Identifier {identifier} in file {self._source_file}'
-                                      f' is not used in any test.'))
+            warnings.warn(Warning(f'Identifier {identifier} in file {self._source_file}'
+                                    f' is not used in any test.'))
             yield f'> **No Proves found for Reference *{identifier}*** \n'
             return
 
@@ -314,12 +319,12 @@ class SpecWithTestsWriter(SpecWriter):
         yield '>>| --- | --- | --- | --- | --- | --- | \n'
         for index, item in enumerate(items):
             report = self._results[item.nodeid]
-            yield (f">>| { index + 1 } | "
-                   f"{ ':heavy_check_mark:' if report.passed else ':x:' } | "
-                   f"{ self.format_test_name(item.name) } | "
-                   f"{ getattr(report, 'test_type') if hasattr(report, 'test_type') else TestType.UNIT } | "
-                   f"{ ' '.join(self.format_doc_string(item.obj.__doc__)) } | "
-                   f"{ item.nodeid } | "
+            yield (f">>| {index + 1} | "
+                   f"{':heavy_check_mark:' if report.passed else ':x:'} | "
+                   f"{self.format_test_name(item.name)} | "
+                   f"{getattr(report, 'test_type') if hasattr(report, 'test_type') else TestType.UNIT} | "
+                   f"{' '.join(self.format_doc_string(item.obj.__doc__))} | "
+                   f"{item.nodeid} | "
                    f"\n")
 
         yield '\n'
