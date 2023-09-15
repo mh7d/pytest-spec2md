@@ -41,10 +41,15 @@ The marker can be used at every layer of testing object, so you can also use it 
 Furthermore, it provides the marker *spec_identifier*. This identifier can be used, to connect tests with the identifier 
 in the specification document.
 
+Additionally, there is the marker *test_type*. This can be used to define the type of the test to be displayed in the 
+specification document. The default displayed is UnitTest. The module provides an enum with some default types to use, 
+own types can be used as well.
+
 #### Example
 
 ```python
 import pytest
+from pytest_spec2md import TestType
 
 
 def function_to_ref():
@@ -62,7 +67,27 @@ def test_use_a_reference_in_doc():
 @pytest.mark.spec_identifier('Spec.FuntionA')
 def test_uses_identifier_from_spec():
     assert True
+
+
+@pytest.mark.spec_identifier('Spec.FuntionA')
+@pytest.mark.test_type(TestType.PERFORMANCE)
+def test_this_is_a_performance_test():
+    assert True
 ```
+
+This is how the identifier should be used on a specification file.
+
+```markdown
+# Specification File
+
+Here you find more information for the requirement.
+
+<!-- TestRef: Spec.FuntionA -->
+```
+
+As a result, a block is added at each position of the comment ``` <!-- TestRef: add_reference_here --> ```. 
+Therefore, the comment has to be a single line. 
+After this comment the information about the referenced tests are added.
 
 ## Examples
 
